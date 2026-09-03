@@ -29,6 +29,9 @@ const Login = ({ onLogin }) => {
 // ----- Document List -----
 const DocList = ({ userId, onSelect, refresh }) => {
   const [docs, setDocs] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
+
   useEffect(() => {
     if (userId) {
       axios.get(`${API}/documents?userId=${userId}`).then(res => setDocs(res.data));
@@ -51,6 +54,27 @@ const DocList = ({ userId, onSelect, refresh }) => {
     refresh();
   };
 
+  const startEdit = (e, doc) => {
+    e.stopPropagation();
+    setEditingId(doc.id);
+    setEditingTitle(doc.title);
+  };
+
+  const saveEdit = (e, docId) => {
+    e.stopPropagation();
+    if (editingTitle.trim()) {
+      axios.put(`${API}/documents/${docId}`, { title: editingTitle }).then(() => {
+        setEditingId(null);
+        refresh();
+      });
+    }
+  };
+
+  const cancelEdit = (e) => {
+    e.stopPropagation();
+    setEditingId(null);
+  };
+
   return (
     <div className="w-72 bg-gray-50 border-r p-4 h-screen overflow-auto">
       <button onClick={createDoc} className="w-full bg-blue-600 text-white p-2 rounded mb-2">+ New Document</button>
@@ -59,8 +83,42 @@ const DocList = ({ userId, onSelect, refresh }) => {
         <input type="file" accept=".txt" onChange={uploadFile} className="hidden" />
       </label>
       {docs.map(d => (
-        <div key={d.id} onClick={() => onSelect(d)} className="p-2 hover:bg-gray-200 cursor-pointer truncate border-b">
-          {d.title}
+        <div key={d.id} className="mb-2 border-b">
+          {editingId === d.id ? (
+            <div className="flex gap-2 p-2" onClick={e => e.stopPropagation()}>
+              <input
+                type="text"
+                value={editingTitle}
+                onChange={e => setEditingTitle(e.target.value)}
+                className="flex-1 px-2 py-1 border rounded text-sm"
+                autoFocus
+              />
+              <button
+                onClick={e => saveEdit(e, d.id)}
+                className="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600"
+              >
+                ✓
+              </button>
+              <button
+                onClick={cancelEdit}
+                className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-2 hover:bg-gray-200 cursor-pointer group">
+              <div onClick={() => onSelect(d)} className="flex-1 truncate">
+                {d.title}
+              </div>
+              <button
+                onClick={e => startEdit(e, d)}
+                className="px-2 py-1 bg-blue-500 text-white rounded text-xs opacity-0 group-hover:opacity-100 hover:bg-blue-600"
+              >
+                Edit
+              </button>
+            </div>
+          )}
         </div>
       ))}
     </div>
