@@ -1,5 +1,8 @@
 ﻿import Database from 'better-sqlite3';
 const db = new Database(process.env.DATABASE_PATH || 'database.sqlite');
+db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+db.pragma('cache_size = -64000');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -22,6 +25,12 @@ db.exec(`
   );
   INSERT OR IGNORE INTO users (id, name) VALUES 
     (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');
+`);
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_documents_owner_id ON documents(owner_id);
+  CREATE INDEX IF NOT EXISTS idx_shares_user_id ON shares(user_id);
+  CREATE INDEX IF NOT EXISTS idx_shares_doc_id ON shares(doc_id);
 `);
 
 export default db;

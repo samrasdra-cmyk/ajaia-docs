@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -70,13 +70,19 @@ const DocList = ({ userId, onSelect, refresh }) => {
 // ----- Editor -----
 const Editor = ({ doc, refresh }) => {
   const [title, setTitle] = useState(doc?.title || '');
+  const saveTimeout = useRef(null);
+
+  useEffect(() => () => clearTimeout(saveTimeout.current), [doc.id]);
 
   const editor = useEditor({
     extensions: [StarterKit],
     content: doc?.content ? JSON.parse(doc.content) : { type: 'doc', content: [] },
     onUpdate: ({ editor }) => {
-      const json = JSON.stringify(editor.getJSON());
-      axios.put(`${API}/documents/${doc.id}`, { content: json });
+      clearTimeout(saveTimeout.current);
+      saveTimeout.current = setTimeout(() => {
+        const json = JSON.stringify(editor.getJSON());
+        axios.put(`${API}/documents/${doc.id}`, { content: json });
+      }, 500);
     },
   });
 

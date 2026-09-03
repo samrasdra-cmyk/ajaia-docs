@@ -30,14 +30,15 @@ app.get('/api/documents', (req, res) => {
   const userId = parseInt(req.query.userId);
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
-  const owned = db.prepare('SELECT * FROM documents WHERE owner_id = ?').all(userId);
-  const sharedIds = db.prepare('SELECT doc_id FROM shares WHERE user_id = ?').all(userId).map(r => r.doc_id);
-  let shared = [];
-  if (sharedIds.length) {
-    const placeholders = sharedIds.map(() => '?').join(',');
-    shared = db.prepare(`SELECT * FROM documents WHERE id IN (${placeholders})`).all(...sharedIds);
-  }
-  res.json([...owned, ...shared]);
+  const documents = db.prepare(`
+    SELECT d.* FROM documents d
+    WHERE d.owner_id = ?
+    UNION
+    SELECT d.* FROM documents d
+    INNER JOIN shares s ON d.id = s.doc_id
+    WHERE s.user_id = ?
+  `).all(userId, userId);
+  res.json(documents);
 });
 
 // --- Create document ---
