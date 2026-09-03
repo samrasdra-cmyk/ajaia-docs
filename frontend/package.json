@@ -2,6 +2,7 @@
   "name": "doc-frontend",
   "version": "0.0.0",
   "scripts": { "dev": "vite", "build": "vite build" },
+  "engines": { "node": "18.x" },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -3,7 +3,8 @@ import axios from 'axios';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
-const API = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api')).replace(/\/$/, '');
+const configuredApiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '')).replace(/\/$/, '');
+const API = configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`;
 
 // ----- Mock Login -----
 const Login = ({ onLogin }) => {
@@ -93,7 +94,7 @@ const Editor = ({ doc, refresh }) => {
         onBlur={rename}
         className="text-3xl font-bold w-full border-b border-gray-300 mb-4 focus:outline-none"
       />
-      <div className="border rounded p-4 min-h-[70vh] prose max-w-none">
+      <div className="border rounded p-4 min-h-[70vh] max-w-none">
         <EditorContent editor={editor} />
       </div>
       <div className="mt-2 text-sm text-gray-400">Autosaves while you type</div>
