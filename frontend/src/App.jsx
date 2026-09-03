@@ -28,10 +28,11 @@ const Login = ({ onLogin }) => {
 };
 
 // ----- Document List -----
-const DocList = ({ userId, onSelect, refresh }) => {
+const DocList = ({ userId, onSelect, selectedDoc, refresh }) => {
   const [docs, setDocs] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const listRef = React.useRef(null);
 
   useEffect(() => {
     if (userId) {
@@ -76,8 +77,24 @@ const DocList = ({ userId, onSelect, refresh }) => {
     setEditingId(null);
   };
 
+  const deleteDoc = (e, docId) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this document?')) {
+      axios.delete(`${API}/documents/${docId}`).then(() => {
+        if (selectedDoc?.id === docId) {
+          onSelect(null);
+        }
+        refresh();
+        // Scroll to top
+        if (listRef.current) {
+          listRef.current.scrollTop = 0;
+        }
+      });
+    }
+  };
+
   return (
-    <div className="w-72 bg-gray-50 border-r p-4 h-screen overflow-auto">
+    <div ref={listRef} className="w-72 bg-gray-50 border-r p-4 h-screen overflow-auto">
       <button onClick={createDoc} className="w-full bg-blue-600 text-white p-2 rounded mb-2">+ New Document</button>
       <label className="w-full block bg-green-600 text-white p-2 rounded text-center cursor-pointer mb-4">
         Upload .txt
@@ -112,12 +129,20 @@ const DocList = ({ userId, onSelect, refresh }) => {
               <div onClick={() => onSelect(d)} className="flex-1 truncate">
                 {d.title}
               </div>
-              <button
-                onClick={e => startEdit(e, d)}
-                className="px-2 py-1 bg-blue-500 text-white rounded text-xs opacity-0 group-hover:opacity-100 hover:bg-blue-600"
-              >
-                Edit
-              </button>
+              <div className="flex gap-1">
+                <button
+                  onClick={e => startEdit(e, d)}
+                  className="px-2 py-1 bg-blue-500 text-white rounded text-xs opacity-0 group-hover:opacity-100 hover:bg-blue-600"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={e => deleteDoc(e, d.id)}
+                  className="px-2 py-1 bg-red-500 text-white rounded text-xs opacity-0 group-hover:opacity-100 hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -223,7 +248,7 @@ const Editor = ({ doc, refresh }) => {
   };
 
   return (
-    <div className="flex-1 p-6">
+    <div className="flex-1 p-6 overflow-auto">
       <input
         value={title}
         onChange={e => setTitle(e.target.value)}
@@ -250,7 +275,7 @@ const App = () => {
 
   return (
     <div className="flex h-screen">
-      <DocList userId={user.id} onSelect={setSelectedDoc} refresh={refresh} />
+      <DocList userId={user.id} onSelect={setSelectedDoc} selectedDoc={selectedDoc} refresh={refresh} />
       {selectedDoc ? (
         <Editor key={selectedDoc.id} doc={selectedDoc} refresh={refresh} />
       ) : (
