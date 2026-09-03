@@ -59,8 +59,21 @@ const DocList = ({ userId, onSelect, refresh }) => {
         <input type="file" accept=".txt" onChange={uploadFile} className="hidden" />
       </label>
       {docs.map(d => (
-        <div key={d.id} onClick={() => onSelect(d)} className="p-2 hover:bg-gray-200 cursor-pointer truncate border-b">
-          {d.title}
+        <div key={d.id} className="flex items-center gap-2 p-2 border-b hover:bg-gray-200">
+          <button
+            type="button"
+            onClick={() => onSelect(d)}
+            className="min-w-0 flex-1 truncate text-left cursor-pointer"
+          >
+            {d.title}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelect(d)}
+            className="shrink-0 rounded border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-blue-50"
+          >
+            Edit
+          </button>
         </div>
       ))}
     </div>
