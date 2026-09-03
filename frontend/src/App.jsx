@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '')).replace(/\/$/, '');
 const API = configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`;
@@ -125,12 +126,89 @@ const DocList = ({ userId, onSelect, refresh }) => {
   );
 };
 
+// ----- Toolbar -----
+const Toolbar = ({ editor }) => {
+  if (!editor) return null;
+
+  return (
+    <div className="flex gap-2 mb-4 p-4 bg-gray-100 border rounded flex-wrap">
+      <button
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={`px-3 py-2 rounded text-sm font-semibold ${editor.isActive('bold') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Bold (Ctrl+B)"
+      >
+        <strong>B</strong>
+      </button>
+      
+      <button
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={`px-3 py-2 rounded text-sm font-italic ${editor.isActive('italic') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Italic (Ctrl+I)"
+      >
+        <em>I</em>
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={`px-3 py-2 rounded text-sm underline ${editor.isActive('underline') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Underline (Ctrl+U)"
+      >
+        U
+      </button>
+
+      <div className="border-l border-gray-300"></div>
+
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        className={`px-3 py-2 rounded text-sm font-bold ${editor.isActive('heading', { level: 1 }) ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Heading 1"
+      >
+        H1
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        className={`px-3 py-2 rounded text-sm font-bold ${editor.isActive('heading', { level: 2 }) ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Heading 2"
+      >
+        H2
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        className={`px-3 py-2 rounded text-sm font-bold ${editor.isActive('heading', { level: 3 }) ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Heading 3"
+      >
+        H3
+      </button>
+
+      <div className="border-l border-gray-300"></div>
+
+      <button
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={`px-3 py-2 rounded text-sm ${editor.isActive('bulletList') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Bullet List"
+      >
+        • List
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        className={`px-3 py-2 rounded text-sm ${editor.isActive('orderedList') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Ordered List"
+      >
+        1. List
+      </button>
+    </div>
+  );
+};
+
 // ----- Editor -----
 const Editor = ({ doc, refresh }) => {
   const [title, setTitle] = useState(doc?.title || '');
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, Underline],
     content: doc?.content ? JSON.parse(doc.content) : { type: 'doc', content: [] },
     onUpdate: ({ editor }) => {
       const json = JSON.stringify(editor.getJSON());
@@ -152,7 +230,8 @@ const Editor = ({ doc, refresh }) => {
         onBlur={rename}
         className="text-3xl font-bold w-full border-b border-gray-300 mb-4 focus:outline-none"
       />
-      <div className="border rounded p-4 min-h-[70vh] max-w-none">
+      <Toolbar editor={editor} />
+      <div className="border rounded p-4 min-h-[70vh] max-w-none prose prose-sm max-w-none">
         <EditorContent editor={editor} />
       </div>
       <div className="mt-2 text-sm text-gray-400">Autosaves while you type</div>
