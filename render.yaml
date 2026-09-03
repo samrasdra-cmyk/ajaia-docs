@@ -1,9 +1,10 @@
 services:
   - type: web
-    name: ajaia-docs
+    name: ajaia-docs-backend
     runtime: node
-    buildCommand: npm install --prefix frontend && npm install --prefix backend && npm run build --prefix frontend
-    startCommand: npm start --prefix backend
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /health
     disk:
       name: ajaia-docs-data
