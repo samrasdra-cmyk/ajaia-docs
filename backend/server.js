@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
@@ -56,6 +56,14 @@ app.put('/api/documents/:id', (req, res) => {
   const { id } = req.params;
   db.prepare('UPDATE documents SET title = COALESCE(?, title), content = COALESCE(?, content) WHERE id = ?')
     .run(title, content, id);
+  res.json({ success: true });
+});
+
+// --- Delete document ---
+app.delete('/api/documents/:id', (req, res) => {
+  const { id } = req.params;
+  db.prepare('DELETE FROM documents WHERE id = ?').run(id);
+  db.prepare('DELETE FROM shares WHERE doc_id = ?').run(id);
   res.json({ success: true });
 });
 
