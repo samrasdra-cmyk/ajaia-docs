@@ -1,8 +1,5 @@
 {
-  "buildCommand": "rm -rf frontend/node_modules && cd frontend && npm install && npm run build",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "framework": "vite",
-  "env": {
-    "VITE_API_URL": "https://your-render-backend.onrender.com/api"
-  }
+  "installCommand": "npm install --prefix frontend"
 }
