@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
 
 const configuredApiUrl = (
   import.meta.env.VITE_API_URL ||
@@ -56,9 +57,12 @@ const Login = ({ onLogin }) => {
 };
 
 // ----- Document List -----
-const DocList = ({ userId, onSelect, refresh }) => {
+const DocList = ({ userId, onSelect, selectedDoc, refresh }) => {
   const [docs, setDocs] = useState([]);
   const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const listRef = React.useRef(null);
   useEffect(() => {
     if (userId) {
       axios.get(`${API}/documents?userId=${userId}`).then(res => {
@@ -97,8 +101,45 @@ const DocList = ({ userId, onSelect, refresh }) => {
     }
   };
 
+  const startEdit = (e, doc) => {
+    e.stopPropagation();
+    setEditingId(doc.id);
+    setEditingTitle(doc.title);
+  };
+
+  const saveEdit = (e, docId) => {
+    e.stopPropagation();
+    if (editingTitle.trim()) {
+      axios.put(`${API}/documents/${docId}`, { title: editingTitle }).then(() => {
+        setEditingId(null);
+        refresh();
+      });
+    }
+  };
+
+  const cancelEdit = (e) => {
+    e.stopPropagation();
+    setEditingId(null);
+  };
+
+  const deleteDoc = (e, docId) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this document?')) {
+      axios.delete(`${API}/documents/${docId}`).then(() => {
+        if (selectedDoc?.id === docId) {
+          onSelect(null);
+        }
+        refresh();
+        // Scroll to top
+        if (listRef.current) {
+          listRef.current.scrollTop = 0;
+        }
+      });
+    }
+  };
+
   return (
-    <div className="w-72 bg-gray-50 border-r p-4 h-screen overflow-auto">
+    <div ref={listRef} className="w-72 bg-gray-50 border-r p-4 h-screen overflow-auto">
       <button onClick={createDoc} className="w-full bg-blue-600 text-white p-2 rounded mb-2">+ New Document</button>
       <label className="w-full block bg-green-600 text-white p-2 rounded text-center cursor-pointer mb-4">
         Upload .txt
@@ -106,23 +147,129 @@ const DocList = ({ userId, onSelect, refresh }) => {
       </label>
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
       {docs.map(d => (
-        <div key={d.id} className="flex items-center gap-2 p-2 border-b hover:bg-gray-200">
-          <button
-            type="button"
-            onClick={() => onSelect(d)}
-            className="min-w-0 flex-1 truncate text-left cursor-pointer"
-          >
-            {d.title}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelect(d)}
-            className="shrink-0 rounded border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-blue-50"
-          >
-            Edit
-          </button>
+        <div key={d.id} className="mb-2 border-b">
+          {editingId === d.id ? (
+            <div className="flex gap-2 p-2" onClick={e => e.stopPropagation()}>
+              <input
+                type="text"
+                value={editingTitle}
+                onChange={e => setEditingTitle(e.target.value)}
+                className="flex-1 px-2 py-1 border rounded text-sm"
+                autoFocus
+              />
+              <button
+                onClick={e => saveEdit(e, d.id)}
+                className="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600"
+              >
+                ✓
+              </button>
+              <button
+                onClick={cancelEdit}
+                className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-2 hover:bg-gray-200 cursor-pointer group">
+              <div onClick={() => onSelect(d)} className="flex-1 truncate">
+                {d.title}
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={e => startEdit(e, d)}
+                  className="px-2 py-1 bg-blue-500 text-white rounded text-xs opacity-0 group-hover:opacity-100 hover:bg-blue-600"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={e => deleteDoc(e, d.id)}
+                  className="px-2 py-1 bg-red-500 text-white rounded text-xs opacity-0 group-hover:opacity-100 hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ))}
+    </div>
+  );
+};
+
+// ----- Toolbar -----
+const Toolbar = ({ editor }) => {
+  if (!editor) return null;
+
+  return (
+    <div className="flex gap-2 mb-4 p-4 bg-gray-100 border rounded flex-wrap">
+      <button
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={`px-3 py-2 rounded text-sm font-semibold ${editor.isActive('bold') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Bold (Ctrl+B)"
+      >
+        <strong>B</strong>
+      </button>
+      
+      <button
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={`px-3 py-2 rounded text-sm font-italic ${editor.isActive('italic') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Italic (Ctrl+I)"
+      >
+        <em>I</em>
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={`px-3 py-2 rounded text-sm underline ${editor.isActive('underline') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Underline (Ctrl+U)"
+      >
+        U
+      </button>
+
+      <div className="border-l border-gray-300"></div>
+
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        className={`px-3 py-2 rounded text-sm font-bold ${editor.isActive('heading', { level: 1 }) ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Heading 1"
+      >
+        H1
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        className={`px-3 py-2 rounded text-sm font-bold ${editor.isActive('heading', { level: 2 }) ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Heading 2"
+      >
+        H2
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        className={`px-3 py-2 rounded text-sm font-bold ${editor.isActive('heading', { level: 3 }) ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Heading 3"
+      >
+        H3
+      </button>
+
+      <div className="border-l border-gray-300"></div>
+
+      <button
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={`px-3 py-2 rounded text-sm ${editor.isActive('bulletList') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Bullet List"
+      >
+        • List
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        className={`px-3 py-2 rounded text-sm ${editor.isActive('orderedList') ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'}`}
+        title="Ordered List"
+      >
+        1. List
+      </button>
     </div>
   );
 };
@@ -162,7 +309,7 @@ const Editor = ({ doc, refresh, onDeleted }) => {
   };
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, Underline],
     content: parseDocument(doc?.content),
     onUpdate: ({ editor }) => {
       const json = JSON.stringify(editor.getJSON());
@@ -181,7 +328,7 @@ const Editor = ({ doc, refresh, onDeleted }) => {
   };
 
   return (
-    <div className="flex-1 p-6">
+    <div className="flex-1 p-6 overflow-auto">
       <input
         value={title}
         onChange={e => setTitle(e.target.value)}
@@ -212,7 +359,8 @@ const Editor = ({ doc, refresh, onDeleted }) => {
           <FormatButton editor={editor} label="Code" active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
         </div>
       )}
-      <div className="border rounded p-4 min-h-[70vh] max-w-none">
+      <Toolbar editor={editor} />
+      <div className="border rounded p-4 min-h-[70vh] max-w-none prose prose-sm max-w-none">
         <EditorContent editor={editor} />
       </div>
       <div className="mt-2 text-sm text-gray-400">Autosaves while you type</div>
@@ -231,7 +379,7 @@ const App = () => {
 
   return (
     <div className="flex h-screen">
-      <DocList userId={user.id} onSelect={setSelectedDoc} refresh={refresh} />
+      <DocList userId={user.id} onSelect={setSelectedDoc} selectedDoc={selectedDoc} refresh={refresh} />
       {selectedDoc ? (
         <Editor key={selectedDoc.id} doc={selectedDoc} refresh={refresh} onDeleted={() => setSelectedDoc(null)} />
       ) : (
